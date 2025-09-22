@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b9af031c421e2f41bbee40640976313, type: 3}
+  m_Name: eARTH
+  m_EditorClassIdentifier: 
+  planetName: Earth
+  description: "Earth \u2013 Only known planet with life and liquid water on the
+    surface.\n"
+  planetImage: {fileID: 21300000, guid: 93e007e2cd0801e4688524b6345ab9d8, type: 3}
