@@ -341,8 +341,8 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 995657938}
         m_TargetAssemblyTypeName: PlanetWalkARManager, Assembly-CSharp
-        m_MethodName: NewCelestialObjectThresholdPassed
-        m_Mode: 3
+        m_MethodName: OnNextPlanetButton
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -2799,10 +2799,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlanetWalkLocationManager, Assembly-CSharp
-        m_MethodName: Reset
-        m_Mode: 1
+      - m_Target: {fileID: 995657938}
+        m_TargetAssemblyTypeName: PlanetWalkARManager, Assembly-CSharp
+        m_MethodName: ResetPlanets
+        m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

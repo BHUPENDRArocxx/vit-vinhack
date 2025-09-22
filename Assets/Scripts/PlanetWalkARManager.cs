@@ -27,12 +27,12 @@ public class PlanetWalkARManager : MonoBehaviour
     [Tooltip("Hook Next Planet button's OnClick to OnNextPlanetButton()")]
     [SerializeField] private GameObject NextPlanetButton = null;
 
-    // New: Text fields to show planet data (TextMeshPro)
+    // Text fields to show planet data (TextMeshPro)
     [Header("Planet Data UI (TextMeshPro)")]
     [SerializeField] private TextMeshProUGUI planetNameText = null;
     [SerializeField] private TextMeshProUGUI planetDescriptionText = null;
 
-    // New: Image field to show the planet sprite
+    // Image field to show the planet sprite (UnityEngine.UI.Image)
     [Header("Planet Data UI (Image)")]
     [Tooltip("Assign a UI Image (UnityEngine.UI.Image) to display the planet sprite.")]
     [SerializeField] private Image planetImageUI = null;
@@ -118,7 +118,6 @@ public class PlanetWalkARManager : MonoBehaviour
     }
 
     // ------- AUTO-PLACEMENT (threshold/plane based) -------
-    // Keep this if you want the previous auto placement behavior.
     [System.Obsolete]
     public void AddCelestialObject()
     {
@@ -129,8 +128,6 @@ public class PlanetWalkARManager : MonoBehaviour
             return;
         }
 
-        // If terrestrial group: place multiple objects but all at the same placementDistance,
-        // arranged around the camera center so they don't overlap.
         if (walkThresholdIndex == 1) // add terrestrials
         {
             int[] indices = { 1, 2, 3, 4 };
@@ -232,113 +229,160 @@ public class PlanetWalkARManager : MonoBehaviour
     // ------- MANUAL PLACEMENT (Next Planet button) -------
     // Hook your UI Button -> OnClick to this method
     [System.Obsolete]
+
     public void OnNextPlanetButton()
     {
-        // Place the next planet in AR
-        PlaceNextPlanet();
+        // capture the index about to be placed
+        int indexToPlace = manualPlanetIndex;
 
-        // After attempting to place, update the planet data UI:
-        // manualPlanetIndex is incremented inside PlaceNextPlanet if placement was successful.
-        if (planetDataArray != null && planetDataArray.Length > 0)
+        Debug.Log($"[OnNextPlanetButton] Button clicked. Attempting to place index {indexToPlace}.");
+
+        // Place the next planet in AR; PlaceNextPlanet returns true if placement happened
+        bool placed = PlaceNextPlanet();
+
+        if (placed)
         {
-            if (manualPlanetIndex < planetDataArray.Length)
-            {
-                ShowPlanetData(manualPlanetIndex); // shows the data for the next planet (matching current manualPlanetIndex)
-            }
-            else
-            {
-                if (planetNameText != null) planetNameText.text = "No more planets";
-                if (planetDescriptionText != null) planetDescriptionText.text = "All planet data shown.";
-                if (planetImageUI != null) planetImageUI.sprite = null;
-                if (planetImageUI != null) planetImageUI.enabled = false;
-            }
+            Debug.Log($"[OnNextPlanetButton] Placement succeeded for index {indexToPlace}.");
+            // Update UI using the index we actually placed
+            ShowPlanetData(indexToPlace);
+        }
+        else
+        {
+            Debug.Log($"[OnNextPlanetButton] Placement failed or no more planets to place. manualPlanetIndex={manualPlanetIndex}");
+            // Show next or clear UI when no data exists
+            if (planetDataArray == null || planetDataArray.Length == 0)
+                ClearPlanetDataUI();
         }
     }
 
     // Places the next prefab in the CelestialObjectsToPlace array at placementDistance in front of camera,
     // and disables the previously-placed manual planet (keeps it for possible re-enable).
+    // Returns true if placement was performed.
     [System.Obsolete]
-    public void PlaceNextPlanet()
+  // Places the next prefab in the CelestialObjectsToPlace array at placementDistance in front of camera,
+// and disables the previously-placed manual planet (keeps it for possible re-enable).
+// Returns true if placement was performed.
+public bool PlaceNextPlanet()
+{
+    if (arCamera == null)
     {
-        if (arCamera == null)
+        Debug.LogError("PlaceNextPlanet: arCamera is not assigned.");
+        if (DebugText != null) DebugText.text = "AR Camera missing.";
+        return false;
+    }
+
+    if (CelestialObjectsToPlace == null || CelestialObjectsToPlace.Length == 0)
+    {
+        Debug.LogWarning("PlaceNextPlanet: No CelestialObjectsToPlace assigned.");
+        if (DebugText != null) DebugText.text = "No planet prefabs assigned.";
+        return false;
+    }
+
+    if (manualPlanetIndex >= CelestialObjectsToPlace.Length)
+    {
+        if (DebugText != null) DebugText.text = "All planets placed.";
+        Debug.Log("[PlaceNextPlanet] manualPlanetIndex >= CelestialObjectsToPlace.Length - nothing to place.");
+        return false;
+    }
+
+    if (deactivateOldOnNext && lastManualSpawned != null)
+    {
+        lastManualSpawned.SetActive(false);
+        Debug.Log("[PlaceNextPlanet] Deactivated previous manual spawned object.");
+    }
+
+    // compute pose in front of camera
+    Vector3 worldPos = arCamera.transform.position + arCamera.transform.forward.normalized * placementDistance;
+    Pose pose = new Pose(worldPos, Quaternion.LookRotation(arCamera.transform.forward, arCamera.transform.up));
+
+    GameObject prefab = CelestialObjectsToPlace[manualPlanetIndex];
+    if (prefab == null)
+    {
+        Debug.LogWarning($"PlaceNextPlanet: prefab at manualPlanetIndex {manualPlanetIndex} is null.");
+        return false;
+    }
+
+    GameObject spawned = null;
+    ARAnchor usedAnchor = null;
+
+    // Try to create a session-managed anchor, but guard against missing subsystem / exceptions.
+    if (anchorManager != null && anchorManager.enabled)
+    {
+        try
         {
-            Debug.LogError("arCamera is not assigned.");
-            if (DebugText != null) DebugText.text = "AR Camera missing.";
-            return;
-        }
-
-        if (CelestialObjectsToPlace == null || CelestialObjectsToPlace.Length == 0)
-        {
-            Debug.LogWarning("No CelestialObjectsToPlace assigned.");
-            if (DebugText != null) DebugText.text = "No planet prefabs assigned.";
-            return;
-        }
-
-        if (manualPlanetIndex >= CelestialObjectsToPlace.Length)
-        {
-            if (DebugText != null) DebugText.text = "All planets placed.";
-            return;
-        }
-
-        // disable previous manual spawned object if requested
-        if (deactivateOldOnNext && lastManualSpawned != null)
-        {
-            lastManualSpawned.SetActive(false);
-        }
-
-        // compute pose
-        Vector3 worldPos = arCamera.transform.position + arCamera.transform.forward.normalized * placementDistance;
-        Pose pose = new Pose(worldPos, Quaternion.LookRotation(arCamera.transform.forward, arCamera.transform.up));
-
-        GameObject prefab = CelestialObjectsToPlace[manualPlanetIndex];
-        GameObject spawned = null;
-
-        if (anchorManager != null)
-        {
-            ARAnchor anchor = anchorManager.AddAnchor(pose);
-            if (anchor != null)
+            // This can throw InvalidOperationException if subsystem not available.
+            usedAnchor = anchorManager.AddAnchor(pose);
+            if (usedAnchor != null)
             {
-                spawned = Instantiate(prefab, anchor.transform);
+                spawned = Instantiate(prefab, usedAnchor.transform);
                 spawned.transform.localPosition = Vector3.zero;
                 spawned.transform.localRotation = Quaternion.identity;
+                Debug.Log("[PlaceNextPlanet] Anchor created successfully.");
             }
             else
             {
-                spawned = Instantiate(prefab, pose.position, pose.rotation);
+                Debug.LogWarning("[PlaceNextPlanet] anchorManager.AddAnchor returned null. Falling back to plain instantiate.");
             }
         }
-        else
+        catch (System.InvalidOperationException ex)
         {
-            spawned = Instantiate(prefab, pose.position, pose.rotation);
+            Debug.LogWarning($"[PlaceNextPlanet] anchorManager.AddAnchor threw: {ex.Message}. Falling back to plain instantiate.");
+            usedAnchor = null;
         }
-
-        // store manual state
-        lastManualSpawned = spawned;
-        if (spawned != null)
+        catch (System.Exception ex)
         {
-            placedObjects.Add(spawned);
-            // preserve original scaling behavior if desired:
-            float scale = (manualPlanetIndex == 0) ? 1000f : 1f;
-            spawned.transform.localScale = new Vector3(.00025f * scale, .00025f * scale, .00025f * scale);
+            Debug.LogError($"[PlaceNextPlanet] Unexpected exception while creating anchor: {ex}");
+            usedAnchor = null;
         }
-
-        // update indices and UI
-        manualPlanetIndex++;
-        if (DebugText != null)
-        {
-            DebugText.text = (manualPlanetIndex < CelestialObjectsToPlace.Length)
-                ? "Placed. Press Next Planet to place " + CelestialObjectsToPlace[manualPlanetIndex].name + "."
-                : "Placed. No more planets.";
-        }
-
-        if (StartButton != null) StartButton.SetActive(false);
     }
+    else
+    {
+        Debug.Log("[PlaceNextPlanet] anchorManager is null or disabled - will instantiate without anchor.");
+    }
+
+    // If anchor wasn't created, just instantiate at pose
+    if (spawned == null)
+    {
+        spawned = Instantiate(prefab, pose.position, pose.rotation);
+    }
+
+    if (spawned != null)
+    {
+        placedObjects.Add(spawned);
+        lastManualSpawned = spawned;
+
+        float scale = (manualPlanetIndex == 0) ? 1000f : 1f;
+        spawned.transform.localScale = new Vector3(.00025f * scale, .00025f * scale, .00025f * scale);
+
+        Debug.Log($"[PlaceNextPlanet] Spawned prefab '{prefab.name}' at {pose.position} (anchorCreated={(usedAnchor != null)}). manualPlanetIndex (before increment)={manualPlanetIndex}.");
+    }
+    else
+    {
+        Debug.LogError("[PlaceNextPlanet] Failed to spawn prefab for unknown reason.");
+        return false;
+    }
+
+    // update indices and UI
+    manualPlanetIndex++;
+    if (DebugText != null)
+    {
+        DebugText.text = (manualPlanetIndex < CelestialObjectsToPlace.Length)
+            ? "Placed. Press Next Planet to place " + CelestialObjectsToPlace[manualPlanetIndex].name + "."
+            : "Placed. No more planets.";
+    }
+
+    if (StartButton != null) StartButton.SetActive(false);
+
+    return true;
+}
+
 
     // Show planet data from ScriptableObjects
     private void ShowPlanetData(int index)
     {
         if (planetDataArray == null || planetDataArray.Length == 0)
         {
+            Debug.Log("[ShowPlanetData] planetDataArray is null or empty. Clearing UI.");
             ClearPlanetDataUI();
             return;
         }
@@ -347,6 +391,7 @@ public class PlanetWalkARManager : MonoBehaviour
         PlanetData data = planetDataArray[index];
         if (data == null)
         {
+            Debug.LogWarning($"[ShowPlanetData] planetDataArray[{index}] is null. Clearing UI.");
             ClearPlanetDataUI();
             return;
         }
@@ -359,6 +404,11 @@ public class PlanetWalkARManager : MonoBehaviour
             planetImageUI.sprite = data.planetImage;
             planetImageUI.enabled = data.planetImage != null;
         }
+
+        // Debug logs to confirm UI was updated
+        Debug.Log($"[ShowPlanetData] index={index}, name='{data.planetName}', imageAssigned={(data.planetImage != null)}");
+        if (data.planetImage != null)
+            Debug.Log($"[ShowPlanetData] Image sprite name: {data.planetImage.name}");
 
         // optional: the DebugText can also show a short hint
         if (DebugText != null)
@@ -375,6 +425,8 @@ public class PlanetWalkARManager : MonoBehaviour
             planetImageUI.sprite = null;
             planetImageUI.enabled = false;
         }
+
+        Debug.Log("[ClearPlanetDataUI] Cleared planet data UI.");
     }
 
     // PASSED A NEW CELESTIAL OBJECT (keeps auto flow)
@@ -414,5 +466,7 @@ public class PlanetWalkARManager : MonoBehaviour
             ClearPlanetDataUI();
 
         if (DebugText != null) DebugText.text = "Placement reset. Press Next Planet.";
+
+        Debug.Log("[ResetPlanets] Reset complete.");
     }
 }
