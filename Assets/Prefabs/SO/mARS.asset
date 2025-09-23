@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: mARS
   m_EditorClassIdentifier: 
   planetName: Mars
-  description: "Mars \U0001F534 \u2013 Known as the \u201CRed Planet,\u201D has the
-    tallest volcano in the solar system (Olympus Mons).\n"
+  description: "Mars \u2013 Known as the \u201CRed Planet,\u201D has the tallest
+    volcano in the solar system (Olympus Mons).\n"
   planetImage: {fileID: 21300000, guid: 7d7faa48024b89d4a95db300eb046d12, type: 3}

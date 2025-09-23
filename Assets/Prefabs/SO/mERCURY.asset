@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: mERCURY
   m_EditorClassIdentifier: 
   planetName: Mercury
-  description: "Mercury \U0001FA90 \u2013 Smallest planet, closest to the Sun, extreme
-    hot and cold.\n"
+  description: "Mercury  \u2013 Smallest planet, closest to the Sun, extreme hot
+    and cold.\n"
   planetImage: {fileID: 21300000, guid: b4359a9f07a38964ea1d05b2b37d2764, type: 3}

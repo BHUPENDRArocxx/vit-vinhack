@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: SUN
   m_EditorClassIdentifier: 
   planetName: Sun
-  description: "Sun \U0001F31E \u2013 A giant star at the center of the solar system,
-    providing light and heat; it makes up about 99.8% of the solar system\u2019s\_total\_mass."
+  description: "Sun \u2013 A giant star at the center of the solar system, providing
+    light and heat; it makes up about 99.8% of the solar system\u2019s\_total\_mass."
   planetImage: {fileID: 21300000, guid: 1c4946d03441af04093f2a9cf4c884e6, type: 3}
